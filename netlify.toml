@@ -1,0 +1,13 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "frontend/dist"
+
+# Single-page app: serve index.html for any path so a direct load or
+# refresh on a non-root URL doesn't 404. Set VITE_API_BASE_URL in the
+# Netlify site's environment variables to your deployed backend's URL
+# (see frontend/.env.example and README.md "Deployment Notes").
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
