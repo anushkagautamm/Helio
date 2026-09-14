@@ -12,12 +12,12 @@ or a clearly labelled assumption.
 - Location search (city / pincode / locality) via Nominatim, with a map view and a manual
   lat/lon fallback if search is unavailable
 - Roof area input via presets, custom value, or an optional GPS-assisted polygon estimate
-- Electricity bill entry with optional best-effort OCR (Tesseract) from an uploaded photo
+- Electricity bill entry with optional best-effort OCR from an uploaded photo
 - Solar resource lookup via NASA POWER (`ALLSKY_SFC_SW_DWN`), with a labelled fallback
 - Side-by-side comparison of Polycrystalline, Mono PERC, and Bifacial panels
-- PM Surya Ghar central subsidy estimate (tiered, capped)
+- PM Surya Ghar central subsidy estimate
 - Full financial analysis: gross cost, net cost, monthly/annual savings, payback period
 - CO₂ avoided per year (configurable emissions factor)
-- Transparent, rule-based (non-ML) suitability recommendation with stated reasons
+- Transparent, rule-based suitability recommendation with stated reasons
 - Downloadable PDF feasibility report
 - No accounts, no database, no stored bills
