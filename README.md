@@ -19,5 +19,5 @@ or a clearly labelled assumption.
 - Full financial analysis: gross cost, net cost, monthly/annual savings, payback period
 - CO₂ avoided per year (configurable emissions factor)
 - Transparent, rule-based suitability recommendation with stated reasons
-- Downloadable PDF feasibility report
+- Downloadable PDF feasibility report 
 - No accounts, no database, no stored bills
