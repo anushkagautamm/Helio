@@ -4,7 +4,7 @@ Helio helps Indian homeowners answer a practical question: **does rooftop
 solar make sense for my home?** It walks through location, roof size, and
 electricity usage to produce a transparent, planning-level estimate of
 system size, generation, cost, PM Surya Ghar subsidy, savings, payback
-period, and CO₂ impact — with every number traced back to either a formula
+period, and CO₂ impact, with every number traced back to either a formula
 or a clearly labelled assumption.
 
 ## Features
