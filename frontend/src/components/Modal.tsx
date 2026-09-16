@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
+import Icon from './Icon'
 
 interface ModalProps {
   title: string
+  /** Small mono line above the title. */
+  label?: string
   onClose: () => void
   children: React.ReactNode
 }
 
-export default function Modal({ title, onClose, children }: ModalProps) {
+export default function Modal({ title, label, onClose, children }: ModalProps) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -17,28 +20,31 @@ export default function Modal({ title, onClose, children }: ModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dossier-charcoal/30 backdrop-blur-[2px] animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md surface shadow-card p-6 animate-fade-up max-h-[85vh] overflow-y-auto"
+        className="w-full max-w-lg bg-dossier-surface border border-dossier-border shadow-modal max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display text-lg font-bold text-ink">{title}</h3>
+        <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-dossier-border-subtle">
+          <div>
+            {label && <span className="label-mono mb-1">{label}</span>}
+            <h3 className="font-serif text-2xl text-dossier-charcoal">{title}</h3>
+          </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="w-7 h-7 rounded-full flex items-center justify-center text-ink-muted hover:bg-surface2 transition-colors"
+            className="w-8 h-8 -mr-2 flex items-center justify-center text-dossier-secondary hover:text-dossier-charcoal transition-colors"
           >
-            ✕
+            <Icon name="close" className="!text-[20px]" />
           </button>
         </div>
-        {children}
+        <div className="px-6 py-5">{children}</div>
       </div>
     </div>
   )

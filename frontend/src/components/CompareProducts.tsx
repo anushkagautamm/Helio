@@ -4,42 +4,34 @@ import { estimateWithProduct, listProducts } from '../services/api'
 import { formatInr, formatNumber, formatPayback } from '../utils/format'
 import ErrorBanner from './ErrorBanner'
 
-function DeltaRow({
+function ChangeRow({
   label,
   before,
   after,
   format,
+  lowerIsBetter = false,
 }: {
   label: string
   before: number
   after: number
   format: (v: number) => string
+  lowerIsBetter?: boolean
 }) {
   const delta = after - before
+  const better = lowerIsBetter ? delta < 0 : delta > 0
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-edge/70 last:border-0 text-sm">
-      <span className="text-ink-muted">{label}</span>
-      <span className="flex items-baseline gap-2">
-        <span className="text-ink-faint line-through text-xs">{format(before)}</span>
-        <span className="font-semibold text-ink">{format(after)}</span>
-        {delta !== 0 && (
-          <span className={`text-xs font-medium ${delta > 0 ? 'text-sun' : 'text-helio'}`}>
-            ({delta > 0 ? '+' : '−'}
-            {format(Math.abs(delta))})
-          </span>
-        )}
-      </span>
+    <div className="py-3 grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_8rem_8rem_7rem] gap-x-4 items-baseline text-sm">
+      <dt className="text-dossier-secondary">{label}</dt>
+      <dd className="hidden sm:block text-right text-dossier-tertiary tabular">{format(before)}</dd>
+      <dd className="text-right text-dossier-charcoal tabular">{format(after)}</dd>
+      <dd className={`text-right text-xs tabular ${delta === 0 ? 'text-dossier-tertiary' : better ? 'text-dossier-forest' : 'text-dossier-ochre'}`}>
+        {delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`}
+      </dd>
     </div>
   )
 }
 
-export default function CompareProducts({
-  analysis,
-  baseline,
-}: {
-  analysis: AnalyzeResponse
-  baseline: PanelResult
-}) {
+export default function CompareProducts({ analysis, baseline }: { analysis: AnalyzeResponse; baseline: PanelResult }) {
   const [products, setProducts] = useState<ProductInfo[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [manufacturer, setManufacturer] = useState<string>('')
@@ -54,17 +46,8 @@ export default function CompareProducts({
       .catch(() => setLoadError('Could not load the product catalogue right now.'))
   }, [])
 
-  const manufacturers = useMemo(() => {
-    const seen: string[] = []
-    for (const p of products) if (!seen.includes(p.manufacturer)) seen.push(p.manufacturer)
-    return seen
-  }, [products])
-
-  const modelsForManufacturer = useMemo(
-    () => products.filter((p) => p.manufacturer === manufacturer),
-    [products, manufacturer]
-  )
-
+  const manufacturers = useMemo(() => [...new Set(products.map((p) => p.manufacturer))], [products])
+  const modelsForManufacturer = useMemo(() => products.filter((p) => p.manufacturer === manufacturer), [products, manufacturer])
   const selectedProduct = products.find((p) => p.id === productId) ?? null
 
   async function handleUseThisModel() {
@@ -91,22 +74,20 @@ export default function CompareProducts({
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-ink-muted">
-        Want to see how a specific manufacturer's actual product changes the numbers? Pick a
-        manufacturer and model below. This is optional — Helio's main recommendation above already
-        stands on its own.
-      </p>
+    <div className="max-w-3xl">
+      <p className="text-dossier-secondary">See how a real manufacturer's panel would change your numbers.</p>
 
-      {loadError && <ErrorBanner message={loadError} />}
+      {loadError && (
+        <div className="mt-5">
+          <ErrorBanner message={loadError} />
+        </div>
+      )}
 
-      <div className="grid sm:grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold text-ink-muted uppercase tracking-wide block mb-1">
-            Manufacturer
-          </label>
+      <div className="mt-6 grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+        <label className="block">
+          <span className="block text-sm text-dossier-secondary mb-1.5">Manufacturer</span>
           <select
-            className="w-full rounded-lg border border-edge bg-surface px-3 py-2 text-sm text-ink"
+            className="input-field"
             value={manufacturer}
             onChange={(e) => {
               setManufacturer(e.target.value)
@@ -114,20 +95,18 @@ export default function CompareProducts({
               setEstimate(null)
             }}
           >
-            <option value="">Select a manufacturer…</option>
+            <option value="">Choose…</option>
             {manufacturers.map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-ink-muted uppercase tracking-wide block mb-1">
-            Model
-          </label>
+        </label>
+        <label className="block">
+          <span className="block text-sm text-dossier-secondary mb-1.5">Model</span>
           <select
-            className="w-full rounded-lg border border-edge bg-surface px-3 py-2 text-sm text-ink disabled:opacity-50"
+            className="input-field"
             value={productId}
             disabled={!manufacturer}
             onChange={(e) => {
@@ -135,123 +114,87 @@ export default function CompareProducts({
               setEstimate(null)
             }}
           >
-            <option value="">Select a model…</option>
+            <option value="">Choose…</option>
             {modelsForManufacturer.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.model} ({p.watt_min}–{p.watt_max} W)
               </option>
             ))}
           </select>
-        </div>
+        </label>
+        <button type="button" className="btn-secondary h-11" onClick={handleUseThisModel} disabled={!selectedProduct || loading}>
+          {loading ? 'Calculating…' : 'Compare'}
+        </button>
       </div>
 
       {selectedProduct && (
-        <div className="rounded-xl border border-edge bg-surface2 p-4 space-y-2">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h4 className="font-display font-semibold text-ink">
-              {selectedProduct.manufacturer} {selectedProduct.model}
-            </h4>
-            {selectedProduct.almm_listed && (
-              <span className="pill bg-helio-light text-helio-dark text-[10px]">ALMM-listed</span>
-            )}
-          </div>
-          <div className="grid sm:grid-cols-2 gap-1.5 text-sm text-ink-muted">
-            <p>Technology: <span className="text-ink font-medium">{selectedProduct.technology}</span></p>
-            <p>
-              Wattage: <span className="text-ink font-medium">{selectedProduct.watt_min}–{selectedProduct.watt_max} W</span>
-            </p>
-            {selectedProduct.efficiency_percent != null && (
-              <p>Efficiency: <span className="text-ink font-medium">{selectedProduct.efficiency_percent}%</span></p>
-            )}
-            {selectedProduct.warranty_years != null && (
-              <p>Warranty: <span className="text-ink font-medium">{selectedProduct.warranty_years} years</span></p>
-            )}
-            <p>
-              Price:{' '}
-              <span className="text-ink font-medium">
-                {selectedProduct.price_available
-                  ? `₹${selectedProduct.price_per_watt_min}–₹${selectedProduct.price_per_watt_max}/W (indicative)`
-                  : 'Not publicly available'}
-              </span>
-            </p>
-          </div>
-          <p className="text-[11px] text-ink-faint pt-2 border-t border-edge">
-            Source: {selectedProduct.source_name} · Checked {selectedProduct.source_date}
-          </p>
-          <button type="button" className="btn-secondary w-full mt-1" onClick={handleUseThisModel} disabled={loading}>
-            {loading ? 'Recalculating…' : 'Use this model in my estimate'}
-          </button>
+        <p className="mt-4 text-sm text-dossier-tertiary">
+          {selectedProduct.technology} · {selectedProduct.watt_min}–{selectedProduct.watt_max} W
+          {selectedProduct.efficiency_percent != null && ` · ${selectedProduct.efficiency_percent}% efficient`}
+          {selectedProduct.warranty_years != null && ` · ${selectedProduct.warranty_years}-year warranty`}
+          {' · '}
+          {selectedProduct.price_available
+            ? `₹${selectedProduct.price_per_watt_min}–₹${selectedProduct.price_per_watt_max}/W indicative`
+            : 'price not public'}
+          {selectedProduct.almm_listed && ' · ALMM-listed'}
+        </p>
+      )}
+
+      {error && (
+        <div className="mt-5">
+          <ErrorBanner message={error} onRetry={handleUseThisModel} />
         </div>
       )}
 
-      {error && <ErrorBanner message={error} onRetry={handleUseThisModel} />}
-
       {estimate && (
-        <div className="rounded-xl border-2 border-helio bg-helio-light/30 p-4 space-y-3">
-          <h4 className="font-display font-semibold text-ink">
-            What changes with {estimate.product.manufacturer} {estimate.product.model}
-          </h4>
-
+        <div className="mt-8 animate-fade-in">
           {estimate.result ? (
-            <div>
-              <DeltaRow
-                label="Panel count"
-                before={baseline.panel_count}
-                after={estimate.result.panel_count}
-                format={(v) => formatNumber(v)}
-              />
-              <DeltaRow
-                label="System capacity"
-                before={baseline.system_capacity_kw}
-                after={estimate.result.system_capacity_kw}
-                format={(v) => `${formatNumber(v, 2)} kW`}
-              />
-              <DeltaRow
-                label="Annual generation"
-                before={baseline.annual_generation_kwh}
-                after={estimate.result.annual_generation_kwh}
-                format={(v) => `${formatNumber(v)} kWh`}
-              />
-              <DeltaRow
-                label="Gross cost"
-                before={baseline.gross_cost_inr}
-                after={estimate.result.gross_cost_inr}
-                format={formatInr}
-              />
-              <DeltaRow
-                label="Annual savings"
-                before={baseline.annual_savings_inr}
-                after={estimate.result.annual_savings_inr}
-                format={formatInr}
-              />
-              <div className="flex items-center justify-between py-1.5 text-sm">
-                <span className="text-ink-muted">Payback period</span>
-                <span className="flex items-baseline gap-2">
-                  <span className="text-ink-faint line-through text-xs">
-                    {formatPayback(baseline.payback_years, baseline.payback_years_int, baseline.payback_months_remainder)}
-                  </span>
-                  <span className="font-semibold text-ink">
-                    {formatPayback(
-                      estimate.result.payback_years,
-                      estimate.result.payback_years_int,
-                      estimate.result.payback_months_remainder
-                    )}
-                  </span>
-                </span>
+            <>
+              <div className="hidden sm:grid grid-cols-[1fr_8rem_8rem_7rem] gap-x-4 pb-2 border-b border-dossier-border text-xs text-dossier-tertiary">
+                <span />
+                <span className="text-right">{baseline.panel_name}</span>
+                <span className="text-right">{estimate.product.manufacturer} {estimate.product.model}</span>
+                <span className="text-right">Change</span>
               </div>
-              <p className="text-[11px] text-ink-faint mt-2">
-                Price used: ₹{estimate.price_used_per_watt}/W (midpoint of the manufacturer's published
-                range — indicative, not an installer quotation).
+              <dl className="divide-y divide-dossier-border-subtle">
+                <ChangeRow label="Panels" before={baseline.panel_count} after={estimate.result.panel_count} format={(v) => formatNumber(v)} />
+                <ChangeRow
+                  label="System size"
+                  before={baseline.system_capacity_kw}
+                  after={estimate.result.system_capacity_kw}
+                  format={(v) => `${formatNumber(v, 1)} kW`}
+                />
+                <ChangeRow
+                  label="Yearly generation"
+                  before={baseline.annual_generation_kwh}
+                  after={estimate.result.annual_generation_kwh}
+                  format={(v) => `${formatNumber(v)} kWh`}
+                />
+                <ChangeRow label="Installed cost" before={baseline.gross_cost_inr} after={estimate.result.gross_cost_inr} format={formatInr} lowerIsBetter />
+                <ChangeRow label="Yearly savings" before={baseline.annual_savings_inr} after={estimate.result.annual_savings_inr} format={formatInr} />
+                <div className="py-3 flex items-baseline justify-between gap-4 text-sm">
+                  <dt className="text-dossier-secondary">Payback</dt>
+                  <dd className="text-dossier-charcoal">
+                    {formatPayback(estimate.result.payback_years, estimate.result.payback_years_int, estimate.result.payback_months_remainder)}
+                    <span className="text-dossier-tertiary">
+                      {' '}
+                      (was {formatPayback(baseline.payback_years, baseline.payback_years_int, baseline.payback_months_remainder)})
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-4 text-xs text-dossier-tertiary">
+                Uses ₹{estimate.price_used_per_watt}/W, the midpoint of the published price range. Source:{' '}
+                {estimate.product.source_name}, checked {estimate.product.source_date}.
               </p>
-            </div>
+            </>
           ) : (
-            <div>
-              <p className="text-sm text-ink">{estimate.unavailable_reason}</p>
+            <div className="text-sm">
+              <p className="text-dossier-charcoal">{estimate.unavailable_reason}</p>
               {estimate.panel_count_if_known != null && (
-                <p className="text-sm text-ink-muted mt-2">
-                  Based on wattage alone: your roof could fit approximately{' '}
-                  <strong className="text-ink">{estimate.panel_count_if_known} panels</strong> (
-                  {formatNumber(estimate.system_capacity_kw_if_known ?? 0, 2)} kW) of this model.
+                <p className="text-dossier-secondary mt-2">
+                  By wattage alone, your roof could fit about {estimate.panel_count_if_known} panels (
+                  {formatNumber(estimate.system_capacity_kw_if_known ?? 0, 1)} kW) of this model.
                 </p>
               )}
             </div>

@@ -1,3 +1,5 @@
+import Icon from './Icon'
+
 interface ErrorBannerProps {
   title?: string
   message: string
@@ -9,32 +11,26 @@ export default function ErrorBanner({ title, message, onRetry, actions }: ErrorB
   return (
     <div
       role="alert"
-      className="rounded-xl px-4 py-3.5 text-sm border"
-      style={{
-        background: 'rgb(var(--c-sun-light))',
-        borderColor: 'rgb(var(--c-sun) / 0.35)',
-      }}
+      className="p-4 bg-dossier-ochre-light border border-dossier-border border-l-2 border-l-dossier-ochre flex items-start gap-3.5 text-xs leading-relaxed"
     >
-      <div className="flex items-start gap-2.5">
-        <span aria-hidden="true" className="mt-0.5">⚠️</span>
-        <div className="flex-1">
-          {title && <p className="font-semibold text-ink mb-0.5">{title}</p>}
-          <p className="text-ink-muted">{message}</p>
-          {(onRetry || actions) && (
-            <div className="flex flex-wrap gap-2 mt-2.5">
-              {onRetry && (
-                <button onClick={onRetry} className="btn-ghost">
-                  Try again
-                </button>
-              )}
-              {actions?.map((a) => (
-                <button key={a.label} onClick={a.onClick} className="btn-ghost">
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+      <Icon name="warning" className="!text-[18px] text-dossier-ochre shrink-0 mt-px" />
+      <div className="flex-1 min-w-0">
+        {title && <p className="text-sm font-medium text-dossier-charcoal mb-0.5">{title}</p>}
+        <p className="text-dossier-secondary">{message}</p>
+        {(onRetry || actions) && (
+          <div className="flex flex-wrap gap-4 mt-2.5">
+            {onRetry && (
+              <button type="button" onClick={onRetry} className="btn-link text-dossier-charcoal">
+                Try again
+              </button>
+            )}
+            {actions?.map((a) => (
+              <button key={a.label} type="button" onClick={a.onClick} className="btn-link text-dossier-charcoal">
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

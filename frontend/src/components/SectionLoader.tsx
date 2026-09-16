@@ -1,4 +1,4 @@
-/** Suspense fallback for lazy-loaded sections (map, chart) — mirrors AnalyzingLoader's spinner. */
+/** Suspense fallback for lazy-loaded sections (e.g. the map). */
 export default function SectionLoader({
   heightClass = 'h-64',
   label = 'Loading…',
@@ -8,12 +8,12 @@ export default function SectionLoader({
 }) {
   return (
     <div
-      className={`${heightClass} w-full rounded-2xl border border-edge bg-surface2 flex items-center justify-center gap-2.5`}
+      className={`${heightClass} w-full border border-dossier-border bg-dossier-muted/50 flex items-center justify-center gap-2.5`}
       role="status"
       aria-live="polite"
     >
-      <span className="w-5 h-5 rounded-full border-2 border-helio-light border-t-helio animate-spin shrink-0" aria-hidden="true" />
-      <span className="text-sm text-ink-muted">{label}</span>
+      <span className="w-1.5 h-1.5 rounded-full bg-dossier-ochre animate-pulse" aria-hidden="true" />
+      <span className="text-[11px] font-mono uppercase tracking-wider text-dossier-tertiary">{label}</span>
     </div>
   )
 }

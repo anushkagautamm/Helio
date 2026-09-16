@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { OCRConfidence, OCRResponse } from '../utils/types'
 import { ocrBillImage } from '../services/api'
 import ErrorBanner from './ErrorBanner'
+import Icon from './Icon'
 
 interface BillUploadProps {
   unitsKwh: string
@@ -10,16 +11,11 @@ interface BillUploadProps {
   onBillChange: (value: string) => void
 }
 
-const CONFIDENCE_META: Record<OCRConfidence, { label: string; className: string }> = {
-  high: { label: 'High confidence', className: 'bg-helio-light text-helio-dark' },
-  medium: { label: 'Medium confidence', className: 'bg-sun/20 text-sun' },
-  low: { label: 'Low confidence', className: 'bg-sun/20 text-sun' },
-  none: { label: 'Not found', className: 'bg-surface2 text-ink-faint' },
-}
-
-function ConfidenceBadge({ confidence }: { confidence: OCRConfidence }) {
-  const meta = CONFIDENCE_META[confidence]
-  return <span className={`pill text-[10px] ${meta.className}`}>{meta.label}</span>
+const CONFIDENCE_LABEL: Record<OCRConfidence, { label: string; className: string }> = {
+  high: { label: 'High confidence', className: 'text-dossier-sage' },
+  medium: { label: 'Medium confidence', className: 'text-dossier-ochre' },
+  low: { label: 'Low confidence', className: 'text-dossier-ochre' },
+  none: { label: 'Not found', className: 'text-dossier-tertiary' },
 }
 
 type Stage = 'idle' | 'processing' | 'reviewing' | 'failed'
@@ -34,8 +30,7 @@ export default function BillUpload({ unitsKwh, billInr, onUnitsChange, onBillCha
 
   const units = Number(unitsKwh)
   const bill = Number(billInr)
-  const hasValidTariffInputs = unitsKwh !== '' && billInr !== '' && units > 0 && bill > 0
-  const effectiveTariff = hasValidTariffInputs ? bill / units : null
+  const effectiveTariff = unitsKwh !== '' && billInr !== '' && units > 0 && bill > 0 ? bill / units : null
 
   async function handleFile(file: File) {
     setStage('processing')
@@ -53,7 +48,7 @@ export default function BillUpload({ unitsKwh, billInr, onUnitsChange, onBillCha
         setStage('failed')
       }
     } catch {
-      setFailMessage("We couldn't read this bill automatically. Enter your usage and bill amount manually below — it only takes a few seconds.")
+      setFailMessage("We couldn't read this bill automatically. Enter your usage and bill amount below — it only takes a few seconds.")
       setStage('failed')
     }
   }
@@ -71,10 +66,11 @@ export default function BillUpload({ unitsKwh, billInr, onUnitsChange, onBillCha
   }
 
   return (
-    <div className="space-y-5">
+    <div>
+      {/* Upload */}
       <div
-        className={`card border-2 border-dashed text-center transition-colors ${
-          dragOver ? 'border-helio bg-helio-light/40' : 'border-edge'
+        className={`border border-dashed p-5 flex items-center gap-4 transition-colors ${
+          dragOver ? 'border-dossier-charcoal bg-dossier-muted/60' : 'border-dossier-border'
         }`}
         onDragOver={(e) => {
           e.preventDefault()
@@ -83,12 +79,13 @@ export default function BillUpload({ unitsKwh, billInr, onUnitsChange, onBillCha
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
       >
-        <span className="text-3xl block mb-2" aria-hidden="true">🧾</span>
-        <p className="font-display font-semibold text-ink mb-1">Upload your electricity bill</p>
-        <p className="text-sm text-ink-muted mb-4">
-          Drag &amp; drop a photo here, or browse. We'll try to read the details automatically —
-          this is optional and always editable.
-        </p>
+        <span className="w-10 h-10 shrink-0 flex items-center justify-center border border-dossier-border text-dossier-secondary">
+          <Icon name="upload_file" className="!text-[20px]" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-medium text-dossier-charcoal">Upload a bill photo</p>
+          <p className="text-sm text-dossier-secondary mt-0.5">We'll try to read the units and amount for you.</p>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -97,151 +94,121 @@ export default function BillUpload({ unitsKwh, billInr, onUnitsChange, onBillCha
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) handleFile(file)
+            e.target.value = ''
           }}
         />
         <button
           type="button"
-          className="btn-secondary"
+          className="btn-secondary shrink-0"
           onClick={() => fileInputRef.current?.click()}
           disabled={stage === 'processing'}
         >
-          {stage === 'processing' ? 'Reading bill…' : 'Browse Files'}
+          {stage === 'processing' ? 'Reading…' : 'Choose file'}
         </button>
-        <p className="text-[11px] text-ink-faint mt-3">
-          Processed only in memory for this request — never stored on our server.
-        </p>
       </div>
 
-      {stage === 'processing' && (
-        <div className="flex items-center gap-2 text-sm text-ink-muted">
-          <span className="w-4 h-4 border-2 border-helio-light border-t-helio rounded-full animate-spin shrink-0" />
-          Reading your bill…
-        </div>
-      )}
-
       {stage === 'failed' && failMessage && (
-        <ErrorBanner title="Couldn't read the bill automatically" message={failMessage} />
+        <div className="mt-4">
+          <ErrorBanner message={failMessage} />
+        </div>
       )}
 
       {stage === 'reviewing' && ocrResult && (
-        <div className="rounded-2xl border border-helio/30 bg-helio-light/40 p-5">
-          <p className="text-xs font-semibold text-helio-dark uppercase tracking-wide mb-3">
-            We found these details
-          </p>
-
-          <div className="space-y-3 mb-4">
-            <div className="bg-surface rounded-xl p-3.5">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <p className="text-[11px] text-ink-muted uppercase tracking-wide">Monthly consumption</p>
-                <ConfidenceBadge confidence={ocrResult.units_confidence} />
-              </div>
-              <p className="font-display text-lg font-bold text-ink">
-                {ocrResult.units_kwh != null ? `${ocrResult.units_kwh} kWh` : 'Not found'}
-              </p>
-              {ocrResult.units_note && <p className="text-xs text-ink-muted mt-1">{ocrResult.units_note}</p>}
-              {ocrResult.current_meter_reading != null && ocrResult.previous_meter_reading != null && (
-                <p className="text-[11px] text-ink-faint mt-1">
-                  Current reading {ocrResult.current_meter_reading} − previous reading{' '}
-                  {ocrResult.previous_meter_reading}
-                </p>
-              )}
+        <div className="mt-4 border border-dossier-border bg-dossier-surface p-5 animate-fade-in">
+          <p className="text-sm font-medium text-dossier-charcoal">Here's what we found — does it look right?</p>
+          <dl className="mt-4 divide-y divide-dossier-border-subtle text-sm">
+            <div className="py-2.5 flex items-baseline justify-between gap-4">
+              <dt className="text-dossier-secondary">
+                Monthly usage{' '}
+                <span className={`text-xs ${CONFIDENCE_LABEL[ocrResult.units_confidence].className}`}>
+                  · {CONFIDENCE_LABEL[ocrResult.units_confidence].label}
+                </span>
+              </dt>
+              <dd className="text-dossier-charcoal tabular">{ocrResult.units_kwh != null ? `${ocrResult.units_kwh} kWh` : '—'}</dd>
             </div>
-
-            <div className="bg-surface rounded-xl p-3.5">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <p className="text-[11px] text-ink-muted uppercase tracking-wide">Bill amount</p>
-                <ConfidenceBadge confidence={ocrResult.amount_confidence} />
-              </div>
-              <p className="font-display text-lg font-bold text-ink">
-                {ocrResult.bill_amount_inr != null ? `₹${ocrResult.bill_amount_inr.toLocaleString('en-IN')}` : 'Not found'}
-              </p>
-              {ocrResult.amount_source === 'amount_in_words' && (
-                <p className="text-xs text-ink-muted mt-1">Read from the spelled-out amount on the bill.</p>
-              )}
+            <div className="py-2.5 flex items-baseline justify-between gap-4">
+              <dt className="text-dossier-secondary">
+                Bill amount{' '}
+                <span className={`text-xs ${CONFIDENCE_LABEL[ocrResult.amount_confidence].className}`}>
+                  · {CONFIDENCE_LABEL[ocrResult.amount_confidence].label}
+                </span>
+              </dt>
+              <dd className="text-dossier-charcoal tabular">
+                {ocrResult.bill_amount_inr != null ? `₹${ocrResult.bill_amount_inr.toLocaleString('en-IN')}` : '—'}
+              </dd>
             </div>
-
             {ocrResult.billing_period && (
-              <div className="bg-surface rounded-xl p-3.5">
-                <p className="text-[11px] text-ink-muted uppercase tracking-wide">Billing period</p>
-                <p className="text-sm font-semibold text-ink">{ocrResult.billing_period}</p>
+              <div className="py-2.5 flex items-baseline justify-between gap-4">
+                <dt className="text-dossier-secondary">Billing period</dt>
+                <dd className="text-dossier-charcoal text-right">{ocrResult.billing_period}</dd>
               </div>
             )}
-            {ocrResult.detected_tariff_inr_per_kwh && (
-              <div className="bg-surface rounded-xl p-3.5">
-                <p className="text-[11px] text-ink-muted uppercase tracking-wide">Printed tariff</p>
-                <p className="text-sm font-semibold text-ink">₹{ocrResult.detected_tariff_inr_per_kwh}/kWh</p>
-              </div>
-            )}
-          </div>
-
-          {ocrResult.units_kwh == null && (
-            <p className="note-box mb-4">
-              We couldn't reliably determine your electricity consumption from this bill — please
-              enter it manually below rather than relying on a guess.
+          </dl>
+          {(ocrResult.units_note || ocrResult.units_kwh == null) && (
+            <p className="mt-3 text-xs text-dossier-tertiary">
+              {ocrResult.units_kwh == null
+                ? "We couldn't reliably read your usage — please enter it below."
+                : ocrResult.units_note}
             </p>
           )}
-
-          <p className="text-xs text-ink-muted mb-4">Does this look correct?</p>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="mt-5 flex flex-wrap gap-3">
             <button type="button" className="btn-primary" onClick={() => dismissReview(false)}>
-              ✓ Looks correct
+              Looks right
             </button>
             <button type="button" className="btn-secondary" onClick={() => dismissReview(true)}>
-              Edit details
+              Edit
             </button>
           </div>
         </div>
       )}
 
+      {/* Manual entry */}
+      <p className="mt-10 mb-4 text-sm text-dossier-tertiary">Or enter it yourself</p>
       <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="label-text" htmlFor="units-input">Monthly electricity usage</label>
+        <label className="block">
+          <span className="block text-sm text-dossier-secondary mb-1.5">Units per month</span>
           <div className="relative">
             <input
               ref={unitsInputRef}
               id="units-input"
               type="number"
               min={0}
-              className="input-field pr-16"
-              placeholder="e.g. 250"
+              inputMode="decimal"
+              className="input-field tabular pr-14"
+              placeholder="250"
               value={unitsKwh}
               onChange={(e) => onUnitsChange(e.target.value)}
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-ink-faint">units/kWh</span>
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-dossier-tertiary">kWh</span>
           </div>
-        </div>
-        <div>
-          <label className="label-text" htmlFor="bill-input">Monthly bill</label>
+        </label>
+        <label className="block">
+          <span className="block text-sm text-dossier-secondary mb-1.5">Bill per month</span>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-ink-faint">₹</span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-dossier-tertiary">₹</span>
             <input
               id="bill-input"
               type="number"
               min={0}
-              className="input-field pl-8"
-              placeholder="e.g. 1800"
+              inputMode="decimal"
+              className="input-field tabular pl-8"
+              placeholder="1800"
               value={billInr}
               onChange={(e) => onBillChange(e.target.value)}
             />
           </div>
-        </div>
+        </label>
       </div>
 
-      {effectiveTariff !== null ? (
-        <div className="rounded-xl border border-helio/30 bg-helio-light/50 px-4 py-3.5">
-          <p className="text-xs font-semibold text-helio-dark uppercase tracking-wide mb-1">
-            Your effective electricity tariff
-          </p>
-          <p className="font-display text-2xl font-bold text-ink">₹{effectiveTariff.toFixed(2)} / kWh</p>
-          <p className="text-xs text-ink-muted mt-1">Calculated from your bill ÷ electricity usage.</p>
-        </div>
-      ) : (
-        <p className="note-box">
-          Both fields are optional but improve accuracy. Without both, we'll use a default
-          assumption of <strong className="text-ink">₹7/kWh</strong>, clearly labelled in your
-          results.
-        </p>
-      )}
+      <div className="mt-6 pt-5 border-t border-dossier-border-subtle flex items-baseline justify-between gap-4">
+        <span className="text-sm text-dossier-secondary">
+          {effectiveTariff !== null ? 'Your price per unit' : 'Without these we assume'}
+        </span>
+        <span className="font-serif text-2xl text-dossier-charcoal tabular">
+          ₹{(effectiveTariff ?? 7).toFixed(2)}
+          <span className="font-sans text-sm text-dossier-tertiary"> / kWh</span>
+        </span>
+      </div>
     </div>
   )
 }

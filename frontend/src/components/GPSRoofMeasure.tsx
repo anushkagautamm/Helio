@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import type { GPSPoint } from '../utils/types'
 import { estimateGpsRoofArea } from '../services/api'
+import { formatNumber } from '../utils/format'
 import ErrorBanner from './ErrorBanner'
 import MapView from './LazyMapView'
+
+const MAX_POINTS = 8
 
 interface GPSRoofMeasureProps {
   onEstimated: (sqft: number) => void
@@ -35,17 +38,14 @@ export default function GPSRoofMeasure({ onEstimated }: GPSRoofMeasureProps) {
     setError(null)
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setPoints((prev) => [
-          ...prev,
-          { lat: position.coords.latitude, lon: position.coords.longitude },
-        ])
+        setPoints((prev) => [...prev, { lat: position.coords.latitude, lon: position.coords.longitude }])
         setCapturing(false)
       },
       (err) => {
         setError(
           err.code === err.PERMISSION_DENIED
-            ? 'Location permission was denied. Please allow location access to use GPS measurement, or use manual entry instead.'
-            : 'Could not get your current location. Please try again or use manual entry.',
+            ? 'Location permission was denied. Please allow location access to use GPS measurement, or enter the area instead.'
+            : 'Could not get your current location. Please try again or enter the area instead.',
         )
         setCapturing(false)
       },
@@ -66,8 +66,7 @@ export default function GPSRoofMeasure({ onEstimated }: GPSRoofMeasureProps) {
     setCalculating(true)
     setError(null)
     try {
-      const response = await estimateGpsRoofArea(points)
-      setResult(response)
+      setResult(await estimateGpsRoofArea(points))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not calculate area from these points.')
     } finally {
@@ -77,90 +76,60 @@ export default function GPSRoofMeasure({ onEstimated }: GPSRoofMeasureProps) {
 
   if (!started) {
     return (
-      <div className="card mt-4">
-        <div className="flex items-start gap-3 mb-3">
-          <span className="text-2xl shrink-0" aria-hidden="true">🚶</span>
-          <div>
-            <h4 className="font-display font-semibold text-ink mb-1">Walk My Roof</h4>
-            <p className="text-sm text-ink-muted">
-              Walk around the roof boundary while Helio records GPS points, then we'll estimate
-              the enclosed area.
-            </p>
-          </div>
-        </div>
-        <p className="note-box mb-3">
-          GPS-assisted estimate — not a precise architectural measurement. Ordinary phone/browser
-          GPS can be off by several metres per point, so treat results as a rough planning
-          figure.
+      <div className="space-y-4">
+        <p className="text-sm text-dossier-secondary leading-relaxed">
+          Stand at each corner of your roof and record a point. Phone GPS can be off by a few metres, so treat the result
+          as a rough figure.
         </p>
-        <button type="button" className="btn-primary" onClick={startMeasurement}>
-          Start Measurement
+        <button type="button" className="btn-secondary" onClick={startMeasurement}>
+          Start measuring
         </button>
       </div>
     )
   }
 
   return (
-    <div className="card mt-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-display font-semibold text-ink">Walk My Roof</h4>
-        <button type="button" className="text-xs text-ink-muted underline" onClick={() => setStarted(false)}>
-          Cancel
-        </button>
+    <div className="space-y-4">
+      {error && <ErrorBanner message={error} />}
+
+      <div className="border border-dossier-border">
+        <MapView lat={mapCenter.lat} lon={mapCenter.lon} heightClass="h-60" zoom={19} polygonPoints={points} hideMarker />
       </div>
 
-      {error && <div className="mb-3"><ErrorBanner message={error} /></div>}
-
-      <div className="mb-3">
-        <MapView
-          lat={mapCenter.lat}
-          lon={mapCenter.lon}
-          heightClass="h-64"
-          zoom={19}
-          polygonPoints={points}
-          hideMarker
-        />
-      </div>
-
-      <div className="flex items-center justify-between mb-3 text-sm">
-        <span className="text-ink-muted">
-          <strong className="text-ink">{points.length}</strong> of 8 points recorded
-          {points.length < 3 && ` (need ${3 - points.length} more)`}
+      <div className="flex items-center justify-between gap-4 text-sm">
+        <span className="text-dossier-secondary tabular">
+          {points.length} of {MAX_POINTS} points{points.length < 3 && ` · ${3 - points.length} more needed`}
         </span>
-        {points.length > 0 && (
-          <button type="button" className="text-xs text-ink-muted underline" onClick={undoLastPoint}>
-            Undo last point
+        <span className="flex gap-5">
+          {points.length > 0 && (
+            <button type="button" className="text-dossier-secondary hover:text-dossier-charcoal" onClick={undoLastPoint}>
+              Undo
+            </button>
+          )}
+          <button type="button" className="text-dossier-secondary hover:text-dossier-charcoal" onClick={() => setStarted(false)}>
+            Cancel
           </button>
-        )}
+        </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={capturePoint}
-          disabled={capturing || points.length >= 8}
-        >
-          {capturing ? 'Getting location…' : '📍 Record Point'}
+      <div className="flex flex-wrap gap-3">
+        <button type="button" className="btn-secondary" onClick={capturePoint} disabled={capturing || points.length >= MAX_POINTS}>
+          {capturing ? 'Locating…' : 'Record point'}
         </button>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={finishMeasurement}
-          disabled={points.length < 3 || calculating}
-        >
-          {calculating ? 'Calculating…' : 'Finish Measurement'}
+        <button type="button" className="btn-primary" onClick={finishMeasurement} disabled={points.length < 3 || calculating}>
+          {calculating ? 'Calculating…' : 'Finish'}
         </button>
       </div>
 
       {result && (
-        <div className="rounded-xl p-4 border border-helio/30 bg-helio-light/50">
-          <p className="font-display font-semibold text-helio-dark">
-            Estimated area: {result.area_sqft.toFixed(0)} sq ft ({result.area_sqm.toFixed(1)} m²)
+        <div className="pt-4 border-t border-dossier-border-subtle animate-fade-in">
+          <p className="text-sm text-dossier-secondary">Estimated roof area</p>
+          <p className="font-serif text-3xl text-dossier-charcoal tabular mt-1">
+            {formatNumber(result.area_sqft)} <span className="font-sans text-sm text-dossier-tertiary">sq ft · {formatNumber(result.area_sqm, 1)} m²</span>
           </p>
-          <p className="text-xs text-ink-muted mt-1">{result.warning}</p>
-          <button type="button" className="btn-primary mt-3" onClick={() => onEstimated(result.area_sqft)}>
-            Confirm This Area
+          <p className="text-xs text-dossier-tertiary mt-2">{result.warning}</p>
+          <button type="button" className="btn-primary mt-4" onClick={() => onEstimated(result.area_sqft)}>
+            Use this area
           </button>
         </div>
       )}

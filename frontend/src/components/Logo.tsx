@@ -11,7 +11,7 @@ interface LogoProps {
  */
 export default function Logo({ className = 'h-10' }: LogoProps) {
   return (
-    <svg viewBox="-30 70 415 115" className={`w-auto text-ink ${className}`} role="img" aria-label="Helio">
+    <svg viewBox="-30 70 415 115" className={`w-auto text-dossier-charcoal ${className}`} role="img" aria-label="Helio">
       <defs>
         <linearGradient id="helio-logo-panel" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#3A4550" />

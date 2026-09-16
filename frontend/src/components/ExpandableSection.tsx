@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import Icon from './Icon'
 
 interface ExpandableSectionProps {
   title: string
@@ -10,6 +11,7 @@ interface ExpandableSectionProps {
   sectionId?: string
 }
 
+/** A quiet disclosure row — stack several inside a hairline-divided list. */
 export default function ExpandableSection({
   title,
   children,
@@ -30,21 +32,25 @@ export default function ExpandableSection({
   }
 
   return (
-    <div id={sectionId} className="border border-edge rounded-xl overflow-hidden">
+    <div id={sectionId} className="scroll-mt-24">
       <button
         type="button"
         onClick={toggle}
         aria-expanded={open}
         aria-controls={id}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left bg-surface2 hover:bg-surface2/70 transition-colors"
+        className="group w-full py-6 flex items-center justify-between gap-6 text-left"
       >
-        <span className="text-sm font-semibold text-ink">{title}</span>
-        <span className={`text-ink-muted transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} aria-hidden="true">
-          ⌄
+        <span className="font-serif text-xl sm:text-2xl text-dossier-charcoal">{title}</span>
+        <span
+          className={`w-8 h-8 shrink-0 flex items-center justify-center border border-dossier-border text-dossier-secondary group-hover:border-dossier-charcoal group-hover:text-dossier-charcoal transition-all ${
+            open ? 'rotate-180' : ''
+          }`}
+        >
+          <Icon name="expand_more" className="!text-[20px]" />
         </span>
       </button>
       {open && (
-        <div id={id} className="px-4 py-4 bg-surface text-sm text-ink-muted space-y-2">
+        <div id={id} className="pb-10 animate-fade-in">
           {children}
         </div>
       )}

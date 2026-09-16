@@ -14,6 +14,7 @@ interface LazyMapViewProps {
   heightClass?: string
   polygonPoints?: { lat: number; lon: number }[]
   hideMarker?: boolean
+  quiet?: boolean
 }
 
 export default function LazyMapView({ heightClass = 'h-64', ...props }: LazyMapViewProps) {
