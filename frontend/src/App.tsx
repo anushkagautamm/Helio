@@ -1,26 +1,20 @@
 import { useEffect, useState } from 'react'
-import Stepper from './components/Stepper'
 import AnalyzingLoader from './components/AnalyzingLoader'
 import ErrorBanner from './components/ErrorBanner'
-import ThemeToggle from './components/ThemeToggle'
-import Logo from './components/Logo'
 import OnboardingTour from './components/OnboardingTour'
+import SiteFooter from './components/SiteFooter'
+import SiteHeader, { type Phase } from './components/SiteHeader'
 import LandingPage from './pages/LandingPage'
 import LocationPage from './pages/LocationPage'
 import RoofAreaPage from './pages/RoofAreaPage'
 import ElectricityBillPage from './pages/ElectricityBillPage'
 import ResultsPage from './pages/ResultsPage'
-import { analyze, ApiError } from './services/api'
-import { useTheme } from './utils/useTheme'
+import { analyze, ApiError, downloadPdfReport } from './services/api'
 import type { AnalyzeResponse, LocationResult } from './utils/types'
 
-const STEPS = ['Location', 'Roof', 'Energy', 'Results']
 const TOUR_SEEN_KEY = 'helio-tour-seen'
 
-type Phase = 'landing' | 'wizard' | 'analyzing' | 'results'
-
 export default function App() {
-  const { theme, toggleTheme } = useTheme()
   const [phase, setPhase] = useState<Phase>('landing')
   const [wizardStep, setWizardStep] = useState(0)
 
@@ -32,15 +26,24 @@ export default function App() {
   const [analysis, setAnalysis] = useState<AnalyzeResponse | null>(null)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
 
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+
   const [showTour, setShowTour] = useState(false)
 
   useEffect(() => {
     try {
       if (!localStorage.getItem(TOUR_SEEN_KEY)) setShowTour(true)
     } catch {
-      // localStorage unavailable — skip auto-show, tour is still reachable via the Help button
+      // localStorage unavailable — skip auto-show, tour is still reachable from the header
     }
   }, [])
+
+  // Each step replaces the page content — start it from the top rather than
+  // wherever the Continue button happened to be.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+  }, [phase, wizardStep])
 
   function closeTour() {
     setShowTour(false)
@@ -49,10 +52,6 @@ export default function App() {
     } catch {
       // ignore — tour will just reappear via auto-show logic if it can't persist
     }
-  }
-
-  function startTour() {
-    setShowTour(true)
   }
 
   async function runAnalysis() {
@@ -69,15 +68,35 @@ export default function App() {
         monthly_bill_inr: billInr ? Number(billInr) : null,
       })
       setAnalysis(result)
+      setDownloadError(null)
       setPhase('results')
     } catch (err) {
       setAnalysisError(
-        err instanceof ApiError
-          ? err.message
-          : 'Something went wrong while analyzing your roof. Please try again.',
+        err instanceof ApiError ? err.message : 'Something went wrong while analysing your roof. Please try again.',
       )
       setPhase('wizard')
       setWizardStep(2)
+    }
+  }
+
+  async function handleDownload() {
+    if (!analysis) return
+    setDownloading(true)
+    setDownloadError(null)
+    try {
+      const blob = await downloadPdfReport(analysis)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'helio-solar-report.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      setDownloadError('Could not generate the PDF report right now. Please try again.')
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -90,54 +109,33 @@ export default function App() {
     setBillInr('')
     setAnalysis(null)
     setAnalysisError(null)
+    setDownloadError(null)
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="border-b border-edge bg-surface/80 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={restart}
-            className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-            aria-label="Helio home"
-          >
-            <Logo className="h-9 sm:h-10" />
-            <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider hidden sm:inline pl-1.5 border-l border-edge/70 leading-tight self-center">
-              Rooftop<br />Solar Advisor
-            </span>
-          </button>
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={startTour}
-            className="text-xs font-semibold text-ink-muted hover:text-helio transition-colors mr-1"
-            title="Take the tour again"
-          >
-            ⓘ Help
-          </button>
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col bg-dossier-bg text-dossier-charcoal">
+      <SiteHeader
+        phase={phase}
+        wizardStep={wizardStep}
+        downloading={downloading}
+        onHome={restart}
+        onStepSelect={setWizardStep}
+        onTour={() => setShowTour(true)}
+        onDownload={handleDownload}
+      />
 
-      <main className="py-8">
-        {phase === 'landing' && <LandingPage onStart={() => setPhase('wizard')} onTakeTour={startTour} />}
+      <main className="flex-grow w-full max-w-6xl mx-auto px-6 py-14 sm:py-20">
+        {phase === 'landing' && <LandingPage onStart={() => setPhase('wizard')} onTakeTour={() => setShowTour(true)} />}
 
         {phase === 'wizard' && (
-          <>
-            <Stepper steps={STEPS} currentStep={wizardStep} />
+          <div className="max-w-2xl mx-auto">
             {analysisError && (
-              <div className="max-w-2xl mx-auto px-4 mb-4">
-                <ErrorBanner message={analysisError} />
+              <div className="mb-10">
+                <ErrorBanner title="The analysis didn't complete" message={analysisError} onRetry={runAnalysis} />
               </div>
             )}
             {wizardStep === 0 && (
-              <LocationPage
-                selected={location}
-                onSelect={setLocation}
-                onNext={() => setWizardStep(1)}
-                onBack={restart}
-              />
+              <LocationPage selected={location} onSelect={setLocation} onNext={() => setWizardStep(1)} onBack={restart} />
             )}
             {wizardStep === 1 && (
               <RoofAreaPage
@@ -155,29 +153,32 @@ export default function App() {
                 onBillChange={setBillInr}
                 onNext={runAnalysis}
                 onBack={() => setWizardStep(1)}
+                canAnalyze={!!location && !!roofAreaSqft}
               />
             )}
-          </>
+          </div>
         )}
 
         {phase === 'analyzing' && (
-          <>
-            <Stepper steps={STEPS} currentStep={3} />
-            <AnalyzingLoader
-              hasLocation={!!location}
-              hasRoof={!!roofAreaSqft}
-              hasElectricity={!!(unitsKwh || billInr)}
-            />
-          </>
+          <AnalyzingLoader hasLocation={!!location} hasRoof={!!roofAreaSqft} hasElectricity={!!(unitsKwh || billInr)} />
         )}
 
         {phase === 'results' && analysis && (
-          <>
-            <Stepper steps={STEPS} currentStep={3} />
-            <ResultsPage analysis={analysis} onBack={() => { setPhase('wizard'); setWizardStep(2) }} onRestart={restart} />
-          </>
+          <ResultsPage
+            analysis={analysis}
+            downloading={downloading}
+            downloadError={downloadError}
+            onDownload={handleDownload}
+            onBack={() => {
+              setPhase('wizard')
+              setWizardStep(2)
+            }}
+            onRestart={restart}
+          />
         )}
       </main>
+
+      <SiteFooter />
 
       {showTour && <OnboardingTour onClose={closeTour} />}
     </div>
