@@ -3,7 +3,10 @@ import { reverseGeocode } from '../services/api'
 import type { LocationResult } from '../utils/types'
 import MapView from '../components/LazyMapView'
 import ErrorBanner from '../components/ErrorBanner'
-import ExpandableSection from '../components/ExpandableSection'
+import OptionRow from '../components/OptionRow'
+import PageHeading from '../components/PageHeading'
+import WizardNav from '../components/WizardNav'
+import { formatLat, formatLon } from '../utils/place'
 
 interface LocationPageProps {
   selected: LocationResult | null
@@ -58,7 +61,16 @@ export default function LocationPage({ selected, onSelect, onNext, onBack }: Loc
   function useManualCoordinates() {
     const lat = Number(manualLat)
     const lon = Number(manualLon)
-    if (Number.isNaN(lat) || Number.isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    if (
+      manualLat.trim() === '' ||
+      manualLon.trim() === '' ||
+      Number.isNaN(lat) ||
+      Number.isNaN(lon) ||
+      lat < -90 ||
+      lat > 90 ||
+      lon < -180 ||
+      lon > 180
+    ) {
       setManualError('Please enter a valid latitude (-90 to 90) and longitude (-180 to 180).')
       return
     }
@@ -72,97 +84,83 @@ export default function LocationPage({ selected, onSelect, onNext, onBack }: Loc
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4">
-      <h2 className="font-display text-2xl font-bold text-ink mb-1">Where is your home?</h2>
-      <p className="text-ink-muted mb-6 text-sm">
-        Helio uses this to look up your local solar resource and map your roof.
-      </p>
+    <div>
+      <PageHeading eyebrow="Step 1 of 3" title="Where is your home?">
+        We use it to look up the sunlight at your exact location. It's only used for this estimate.
+      </PageHeading>
 
-      <button
-        type="button"
-        onClick={useCurrentLocation}
-        disabled={gpsLoading}
-        className="w-full choice-card flex items-center gap-4"
-        aria-pressed={!!selected && !manualOpen}
-      >
-        <span className="text-2xl shrink-0" aria-hidden="true">📍</span>
-        <span className="flex-1">
-          <span className="font-display font-semibold text-ink block text-base">
-            {gpsLoading ? 'Getting your location…' : 'Use My Current Location'}
-          </span>
-          <span className="text-xs text-ink-muted">The fastest way — uses your browser's location</span>
-        </span>
-        {gpsLoading && (
-          <span className="w-5 h-5 border-2 border-helio-light border-t-helio rounded-full animate-spin shrink-0" />
-        )}
-      </button>
+      <div className="border-y border-dossier-border divide-y divide-dossier-border">
+        <OptionRow
+          icon="my_location"
+          title={gpsLoading ? 'Finding your location…' : 'Use my current location'}
+          description="Fastest — uses your browser's location."
+          onClick={useCurrentLocation}
+          disabled={gpsLoading}
+          trailing={gpsLoading ? <span className="w-1.5 h-1.5 rounded-full bg-dossier-ochre animate-pulse shrink-0" /> : undefined}
+        />
+        <OptionRow
+          icon="edit"
+          title="Enter coordinates"
+          description="Copy them from any map app."
+          onClick={() => setManualOpen((v) => !v)}
+          expanded={manualOpen}
+        >
+          <div className="space-y-4">
+            {manualError && <ErrorBanner message={manualError} />}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="block text-sm text-dossier-secondary mb-1.5">Latitude</span>
+                <input
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  className="input-field tabular"
+                  placeholder="12.9716"
+                  value={manualLat}
+                  onChange={(e) => setManualLat(e.target.value)}
+                />
+              </label>
+              <label className="block">
+                <span className="block text-sm text-dossier-secondary mb-1.5">Longitude</span>
+                <input
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  className="input-field tabular"
+                  placeholder="77.5946"
+                  value={manualLon}
+                  onChange={(e) => setManualLon(e.target.value)}
+                />
+              </label>
+            </div>
+            <button type="button" className="btn-secondary" onClick={useManualCoordinates}>
+              Use these coordinates
+            </button>
+          </div>
+        </OptionRow>
+      </div>
 
       {gpsError && (
-        <div className="mt-3">
-          <ErrorBanner title="Couldn't use your location" message={gpsError} />
+        <div className="mt-6">
+          <ErrorBanner message={gpsError} />
         </div>
       )}
 
-      {/* Selected confirmation */}
       {selected && (
-        <div className="card mt-4 border-helio/30 bg-helio-light/40">
-          <p className="text-xs font-semibold text-helio uppercase tracking-wide mb-2">Location selected</p>
-          <p className="text-sm font-medium text-ink mb-3">{selected.display_name}</p>
-          <div className="mb-3">
-            <MapView lat={selected.lat} lon={selected.lon} heightClass="h-40" zoom={14} />
+        <div className="mt-10 animate-fade-in">
+          <div className="border border-dossier-border">
+            <MapView lat={selected.lat} lon={selected.lon} heightClass="h-64" zoom={15} />
           </div>
-          <p className="text-xs text-ink-muted">
-            Lat {selected.lat.toFixed(5)}, Lon {selected.lon.toFixed(5)} — {selected.attribution}
-          </p>
-          <p className="text-xs text-ink-faint mt-2">
-            Helio only uses your location to estimate solar resource and map your roof. Your
-            location is not permanently stored.
-          </p>
+          <div className="mt-3 flex items-baseline justify-between gap-4">
+            <p className="text-sm text-dossier-charcoal">{selected.display_name}</p>
+            <p className="hidden sm:block text-xs font-mono text-dossier-tertiary whitespace-nowrap">
+              {formatLat(selected.lat)}, {formatLon(selected.lon)}
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Manual fallback */}
-      <div className="mt-4">
-        <ExpandableSection title="Enter coordinates manually" defaultOpen={manualOpen}>
-          <p className="text-xs text-ink-muted mb-3">
-            You can find latitude/longitude from any map app — long-press a location to see its
-            coordinates.
-          </p>
-          {manualError && <div className="mb-3"><ErrorBanner message={manualError} /></div>}
-          <div className="grid sm:grid-cols-2 gap-3 mb-3">
-            <input
-              type="number"
-              step="any"
-              className="input-field"
-              placeholder="Latitude e.g. 12.9716"
-              value={manualLat}
-              onChange={(e) => setManualLat(e.target.value)}
-              aria-label="Latitude"
-            />
-            <input
-              type="number"
-              step="any"
-              className="input-field"
-              placeholder="Longitude e.g. 77.5946"
-              value={manualLon}
-              onChange={(e) => setManualLon(e.target.value)}
-              aria-label="Longitude"
-            />
-          </div>
-          <button type="button" className="btn-secondary" onClick={useManualCoordinates}>
-            Use these coordinates
-          </button>
-        </ExpandableSection>
-      </div>
-
-      <div className="flex justify-between mt-7">
-        <button className="btn-secondary" onClick={onBack}>
-          Back
-        </button>
-        <button className="btn-primary" onClick={onNext} disabled={!selected}>
-          Continue
-        </button>
-      </div>
+      <WizardNav onBack={onBack} onNext={onNext} nextDisabled={!selected} />
     </div>
   )
 }
