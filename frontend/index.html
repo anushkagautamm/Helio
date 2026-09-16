@@ -3,21 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Helio — Rooftop Solar Feasibility Advisor</title>
+    <meta name="theme-color" content="#FAF8F5" />
+    <title>Helio — Rooftop Solar Feasibility Report</title>
+    <link rel="icon" type="image/svg+xml" href="/helio-logo.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script>
-      try {
-        var saved = localStorage.getItem('helio-theme')
-        var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        document.documentElement.setAttribute('data-theme', theme)
-        if (theme === 'dark') document.documentElement.classList.add('dark')
-      } catch (e) {}
-    </script>
+    <!-- Headlines are set in Georgia. Georgia has no ₹ glyph, so a one-character
+         Noto Serif subset supplies it consistently across operating systems. -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital@0;1&text=%E2%82%B9&display=swap" rel="stylesheet" />
+    <!-- Icon names must stay alphabetical; keep in sync with IconName in src/components/Icon.tsx. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&icon_names=arrow_back,arrow_forward,check,close,description,directions_walk,edit,expand_more,help,info,my_location,north_east,restart_alt,square_foot,upload_file,verified,warning&display=block"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="root"></div>

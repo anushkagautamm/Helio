@@ -19,15 +19,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Split heavy, infrequently-changing vendor code into its own
-        // cacheable chunks. recharts/leaflet are also lazy-loaded (see
-        // LazyMapView / LazyMonthlyGenerationChart), so in practice these
-        // chunks are only fetched once a map or chart actually renders.
+        // cacheable chunk. leaflet is also lazy-loaded (see LazyMapView), so
+        // in practice this chunk is only fetched once a map actually renders.
+        // Charts are hand-drawn SVG and need no vendor chunk.
         // (react/react-dom are deliberately left out: they're needed to
         // boot the app at all, so Rollup already keeps them in the main
         // entry chunk — forcing them into a separate chunk here just
         // produces an empty one.)
         manualChunks: {
-          recharts: ['recharts'],
           leaflet: ['leaflet', 'react-leaflet'],
         },
       },
