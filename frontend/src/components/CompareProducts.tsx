@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AnalyzeResponse, PanelResult, ProductEstimateResponse, ProductInfo } from '../utils/types'
-import { estimateWithProduct, listProducts } from '../services/api'
+import { ApiError, estimateWithProduct, listProducts } from '../services/api'
 import { formatInr, formatNumber, formatPayback } from '../utils/format'
 import ErrorBanner from './ErrorBanner'
 
@@ -34,17 +34,27 @@ function ChangeRow({
 export default function CompareProducts({ analysis, baseline }: { analysis: AnalyzeResponse; baseline: PanelResult }) {
   const [products, setProducts] = useState<ProductInfo[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadingProducts, setLoadingProducts] = useState(true)
   const [manufacturer, setManufacturer] = useState<string>('')
   const [productId, setProductId] = useState<string>('')
   const [estimate, setEstimate] = useState<ProductEstimateResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  // Kept as a named function so the error banner can offer a real retry —
+  // the catalogue lives on the backend, which may be waking up.
+  const loadProducts = useCallback(() => {
+    setLoadingProducts(true)
+    setLoadError(null)
     listProducts()
       .then(setProducts)
-      .catch(() => setLoadError('Could not load the product catalogue right now.'))
+      .catch((err) =>
+        setLoadError(err instanceof ApiError ? err.message : 'Could not load the manufacturer list right now.'),
+      )
+      .finally(() => setLoadingProducts(false))
   }, [])
+
+  useEffect(loadProducts, [loadProducts])
 
   const manufacturers = useMemo(() => [...new Set(products.map((p) => p.manufacturer))], [products])
   const modelsForManufacturer = useMemo(() => products.filter((p) => p.manufacturer === manufacturer), [products, manufacturer])
@@ -79,7 +89,7 @@ export default function CompareProducts({ analysis, baseline }: { analysis: Anal
 
       {loadError && (
         <div className="mt-5">
-          <ErrorBanner message={loadError} />
+          <ErrorBanner message={loadError} onRetry={loadProducts} />
         </div>
       )}
 
@@ -88,6 +98,7 @@ export default function CompareProducts({ analysis, baseline }: { analysis: Anal
           <span className="block text-sm text-dossier-secondary mb-1.5">Manufacturer</span>
           <select
             className="input-field"
+            disabled={loadingProducts || !!loadError}
             value={manufacturer}
             onChange={(e) => {
               setManufacturer(e.target.value)
@@ -95,7 +106,7 @@ export default function CompareProducts({ analysis, baseline }: { analysis: Anal
               setEstimate(null)
             }}
           >
-            <option value="">Choose…</option>
+            <option value="">{loadingProducts ? 'Loading…' : loadError ? 'Unavailable' : 'Choose…'}</option>
             {manufacturers.map((m) => (
               <option key={m} value={m}>
                 {m}
@@ -126,6 +137,12 @@ export default function CompareProducts({ analysis, baseline }: { analysis: Anal
           {loading ? 'Calculating…' : 'Compare'}
         </button>
       </div>
+
+      {loadingProducts && (
+        <p className="mt-3 text-sm text-dossier-tertiary">
+          Loading manufacturers… this can take up to a minute if the server has been idle.
+        </p>
+      )}
 
       {selectedProduct && (
         <p className="mt-4 text-sm text-dossier-tertiary">

@@ -144,7 +144,9 @@ export default function CompareMyQuote({ analysis }: { analysis: AnalyzeResponse
         </div>
       )}
 
-      {stage === 'processing' && <p className="mt-6 text-sm text-dossier-secondary">Reading your quote…</p>}
+      {stage === 'processing' && (
+        <p className="mt-6 text-sm text-dossier-secondary">Reading your quote… this can take up to a minute — the server sleeps when idle and a large photo takes longer to read.</p>
+      )}
 
       {failMessage && (
         <div className="mt-6 space-y-4">

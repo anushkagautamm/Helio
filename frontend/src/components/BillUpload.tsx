@@ -107,6 +107,13 @@ export default function BillUpload({ unitsKwh, billInr, onUnitsChange, onBillCha
         </button>
       </div>
 
+      {stage === 'processing' && (
+        <p className="mt-4 text-sm text-dossier-secondary">
+          Reading your bill… this can take up to a minute — the server sleeps when idle and a large photo takes
+          longer to read.
+        </p>
+      )}
+
       {stage === 'failed' && failMessage && (
         <div className="mt-4">
           <ErrorBanner message={failMessage} />
