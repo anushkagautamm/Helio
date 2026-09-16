@@ -2,160 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Light mode — warm, premium, sustainability-toned */
-  --c-bg: 250 249 245;
-  --c-surface: 255 255 255;
-  --c-surface-2: 241 246 242;
-  --c-border: 227 231 224;
-  --c-text: 26 26 20;
-  --c-text-muted: 92 92 84;
-  --c-text-faint: 140 140 130;
-  --c-green: 27 110 70;
-  --c-green-dark: 15 61 39;
-  --c-green-light: 224 240 230;
-  --c-green-contrast: 255 255 255;
-  --c-sun: 196 121 26;
-  --c-sun-light: 250 233 205;
-  --c-sun-contrast: 255 255 255;
-}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --c-bg: 15 17 14;
-    --c-surface: 24 27 22;
-    --c-surface-2: 30 35 28;
-    --c-border: 49 55 45;
-    --c-text: 240 241 235;
-    --c-text-muted: 168 170 158;
-    --c-text-faint: 118 120 108;
-    --c-green: 92 209 150;
-    --c-green-dark: 178 235 200;
-    --c-green-light: 33 48 39;
-    --c-green-contrast: 8 20 14;
-    --c-sun: 232 176 82;
-    --c-sun-light: 56 44 24;
-    --c-sun-contrast: 20 14 4;
+  html,
+  body {
+    background-color: #faf8f5;
+    color: #171717;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: rgb(180 83 9 / 0.15);
+    color: #b45309;
+  }
+
+  :focus-visible {
+    outline: 1.5px solid #171717;
+    outline-offset: 2px;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
   }
 }
 
-:root[data-theme='dark'] {
-  --c-bg: 15 17 14;
-  --c-surface: 24 27 22;
-  --c-surface-2: 30 35 28;
-  --c-border: 49 55 45;
-  --c-text: 240 241 235;
-  --c-text-muted: 168 170 158;
-  --c-text-faint: 118 120 108;
-  --c-green: 92 209 150;
-  --c-green-dark: 178 235 200;
-  --c-green-light: 33 48 39;
-  --c-green-contrast: 8 20 14;
-  --c-sun: 232 176 82;
-  --c-sun-light: 56 44 24;
-  --c-sun-contrast: 20 14 4;
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
-html {
-  scroll-behavior: smooth;
-  color-scheme: light dark;
-}
-
-body {
-  background-color: rgb(var(--c-bg));
-  color: rgb(var(--c-text));
-  font-family: 'Inter', system-ui, sans-serif;
-  transition: background-color 0.2s ease;
-}
-
-* {
-  border-color: rgb(var(--c-border));
+.material-symbols-outlined {
+  font-size: 18px;
+  line-height: 1;
+  user-select: none;
 }
 
 .leaflet-container {
   width: 100%;
   height: 100%;
-  border-radius: 1rem;
-  background: rgb(var(--c-surface-2));
+  background: #f4f1ea;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   z-index: 0;
+}
+
+/* Muted base map so the tiles sit inside the paper palette instead of shouting over it. */
+.leaflet-tile-pane {
+  filter: grayscale(0.55) sepia(0.12) contrast(0.95);
 }
 
 .leaflet-control-attribution {
   font-size: 10px !important;
+  background: rgb(250 248 245 / 0.85) !important;
 }
 
-:focus-visible {
-  outline: 2px solid rgb(var(--c-green));
-  outline-offset: 2px;
+.leaflet-bar,
+.leaflet-bar a {
+  border-radius: 0 !important;
 }
 
 @layer components {
-  .font-display {
-    font-family: 'Manrope', system-ui, sans-serif;
-  }
-
-  .surface {
-    @apply bg-surface border border-edge rounded-2xl;
-  }
-
-  .card {
-    @apply surface shadow-card p-5 sm:p-6;
-  }
-
-  .dark .card {
-    box-shadow: none;
-  }
-
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 bg-helio text-helio-contrast font-display font-semibold rounded-xl px-5 py-3 transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-dossier-charcoal text-white text-xs font-mono uppercase tracking-wider transition-colors hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-dossier-charcoal;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 bg-surface hover:bg-surface2 text-ink font-display font-semibold rounded-xl px-5 py-3 border border-edge transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3 border border-dossier-border bg-dossier-surface text-dossier-charcoal text-xs font-mono uppercase tracking-wider transition-colors hover:border-dossier-charcoal disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-dossier-border;
   }
 
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 text-helio font-semibold text-sm hover:underline underline-offset-2 disabled:opacity-50;
+  .btn-link {
+    @apply inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wider text-dossier-secondary underline-offset-4 transition-colors hover:text-dossier-charcoal hover:underline disabled:opacity-40;
+  }
+
+  .label-mono {
+    @apply block text-[11px] font-mono uppercase tracking-wider text-dossier-tertiary;
   }
 
   .input-field {
-    @apply w-full rounded-xl border border-edge bg-surface px-4 py-2.5 text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-helio/40 focus:border-helio transition-colors;
-  }
-
-  .label-text {
-    @apply text-sm font-medium text-ink-muted mb-1.5 block;
-  }
-
-  .pill {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
-  }
-
-  .note-box {
-    @apply text-xs text-ink-muted bg-surface2 border border-edge rounded-xl px-3.5 py-2.5;
-  }
-
-  .choice-card {
-    @apply surface p-5 text-left transition-all hover:border-helio/50 hover:shadow-card cursor-pointer;
-  }
-
-  .choice-card[aria-pressed='true'] {
-    @apply border-helio bg-helio-light;
-  }
-
-  .skeleton {
-    @apply bg-surface2 rounded-lg relative overflow-hidden;
-  }
-
-  .skeleton::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgb(var(--c-border) / 0.6), transparent);
-    animation: shimmer 1.4s infinite;
-  }
-
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    @apply w-full h-11 border border-dossier-border bg-dossier-surface px-3.5 text-sm text-dossier-charcoal placeholder:text-dossier-tertiary transition-colors focus:outline-none focus:border-dossier-charcoal disabled:opacity-50;
   }
 }
